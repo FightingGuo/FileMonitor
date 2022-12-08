@@ -3,6 +3,7 @@ package com.ghc.cloud.utils;
 import java.io.*;
 import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ooxml.POIXMLDocument;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.usermodel.*;
@@ -22,6 +23,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
  *       解决：换行的逻辑都一样，之前卡在处理传入的数据  开始取到整个数据集再取传到单元格的内容就要多包一层循环导致重复插入数据   后来发现list<String[]>可以直接看成一个二位数组通过(i)[j]直接取到数组类型集合的里面的字符串内容
  * 问题5：表格中不同列的样式  1 2 列居中  3 4 列 左对齐
  */
+@Slf4j
 public class WordUtils {
 
     /**
@@ -71,10 +73,13 @@ public class WordUtils {
             ArrayList<XWPFDocument> documentList = new ArrayList<>();
             XWPFDocument doc = null;
             for (int i = 0; i < srcfile.size(); i++) {
-                FileInputStream in = new FileInputStream(srcfile.get(i).getPath());
-                OPCPackage open = OPCPackage.open(in);
-                XWPFDocument document = new XWPFDocument(open);
-                documentList.add(document);
+                try (FileInputStream in = new FileInputStream(srcfile.get(i).getPath())){
+                    OPCPackage open = OPCPackage.open(in);
+                    XWPFDocument document = new XWPFDocument(open);
+                    documentList.add(document);
+                } catch (IOException e) {
+                    log.error("错误信息：{}",e.getMessage());
+                }
             }
             for (int i = 0; i < documentList.size(); i++) {
                 doc = documentList.get(0);
