@@ -2,9 +2,10 @@ package com.ghc.cloud.utils;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ooxml.POIXMLDocument;
+import org.apache.poi.POIXMLDocument;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.usermodel.*;
 import org.apache.xmlbeans.XmlOptions;
@@ -212,40 +213,14 @@ public class WordUtils {
                     paragraph.setIndentationFirstLine(400);
                 }
 
-                //控制替换字符串的变量  需要在循环到最后一个run对象的时候再做字符串的替换 否则会重复追加字符串
-                int count=0;
+                final CopyOnWriteArrayList<XWPFRun> runList = new CopyOnWriteArrayList<>(runs);
 
-                for (XWPFRun run : runs) {
-                    count++;
+                for (XWPFRun run : runList) {
                     //取出替换模板的内容
                     String value = changeValue(run.toString(), textMap);
 
-                    //分段显示的情况(在需要换行的地方传入\r\n)
-                    String[] values = value.split("\n");
-                    if(values.length > 1) {
-                        run.setText(values[0],0);
-                        for (int i = 1; i < values.length; i++) {
-                            //存在分段则新建一个run
-                            XWPFRun newrun = paragraph.insertNewRun(i);
-                            //copy样式
-                            newrun.getCTR().setRPr(run.getCTR().getRPr());
-                            //换行
-                            newrun.addBreak();
-                            //文本追加进模板
-                            newrun.setText(values[i]);
-                        }
-                        break;
-                    }else {
-                        //截取位符$之前的string
-                        String start = text.substring(text.indexOf(".")+1,text.indexOf("$"));
-                        //截取占位符之后的字符串
-                        String end = text.substring(text.indexOf("}")+1);
-
-                        if (count == runs.size()){
-                            replaceValue = start + value + end;
-                            run.setText(replaceValue, 0);
-                        }
-                    }
+                    //判断文本内容是否换行
+                    setWrap(value,paragraph,run);
                 }
             }
         }
@@ -321,8 +296,11 @@ public class WordUtils {
                     List<XWPFParagraph> paragraphs = cell.getParagraphs();
                     for (XWPFParagraph paragraph : paragraphs) {
                         List<XWPFRun> runs = paragraph.getRuns();
-                        for (XWPFRun run : runs) {
-                            run.setText(changeValue(run.toString(), textMap),0);
+                        final CopyOnWriteArrayList<XWPFRun> runList = new CopyOnWriteArrayList<>(runs);
+                        for (XWPFRun run : runList) {
+                            String value = changeValue(run.toString(), textMap);
+                            //判断表格内容是否需要换行
+                            setWrap(value,paragraph,run);
                         }
                     }
                 }
@@ -393,6 +371,8 @@ public class WordUtils {
                 }
                 if (null != paragraph) {  //如果有内容需要换行 就把换行过的内容加入单元格
                     cell.setParagraph(paragraph);
+                    List<XWPFRun> runs = paragraph.getRuns();
+                    runs.clear();
                 }
             }
         }

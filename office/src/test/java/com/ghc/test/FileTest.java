@@ -116,4 +116,17 @@ public class FileTest {
 
             WordUtils.mergerWord(input,outputUrl);
         }
+
+
+    @Test
+    public void test4() {
+        String url1 = "C:\\Users\\Administrator\\Desktop\\a.docx";
+        String out  ="C:\\Users\\Administrator\\Desktop\\b.docx";
+
+        List<String[]> testList = new ArrayList<String[]>();
+
+        testList.add(new String[]{"1","22","3","saaa;\nsaqw;\nwpqoe;\nsaddaw;\n"});
+
+        WordUtils.changWord(url1,out,null,testList);
+    }
 }
